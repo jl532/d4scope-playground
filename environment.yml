@@ -98,4 +98,5 @@ dependencies:
   - pip:
     - mpl-interactions==0.21.0
     - mpl-point-clicker==0.3.1
+    - pyqtgraph==0.12.4
 prefix: C:\Users\jason\Anaconda3\envs\generalCV
