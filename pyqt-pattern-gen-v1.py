@@ -67,25 +67,30 @@ class MainWindow(QWidget):
         self.col_pitch.setFont(QFont("Arial",15))
 
         self.topLeft_rowCoord = QLineEdit()
+        self.topLeft_rowCoord.setValidator(QIntValidator())
         self.topLeft_rowCoord.setMaxLength(4)
         self.topLeft_rowCoord.setAlignment(Qt.AlignRight)
         self.topLeft_rowCoord.setFont(QFont("Arial",15))
         self.topLeft_colCoord = QLineEdit()
+        self.topLeft_colCoord.setValidator(QIntValidator())
         self.topLeft_colCoord.setMaxLength(4)
         self.topLeft_colCoord.setAlignment(Qt.AlignRight)
         self.topLeft_colCoord.setFont(QFont("Arial",15))
 
         self.bg_rows = QLineEdit()
+        self.bg_rows.setValidator(QIntValidator())
         self.bg_rows.setMaxLength(4)
         self.bg_rows.setAlignment(Qt.AlignRight)
         self.bg_rows.setFont(QFont("Arial",15))
         self.bg_cols = QLineEdit()
+        self.bg_cols.setValidator(QIntValidator())
         self.bg_cols.setMaxLength(4)
         self.bg_cols.setAlignment(Qt.AlignRight)
         self.bg_cols.setFont(QFont("Arial",15))
         self.bg_cols.textChanged[str].connect(self.textchanged)
         
         self.contrast = QLineEdit()
+        self.contrast.setValidator(QIntValidator())
         self.contrast.setMaxLength(3)
         self.contrast.setAlignment(Qt.AlignRight)
         self.contrast.setFont(QFont("Arial",15))
@@ -121,11 +126,13 @@ class MainWindow(QWidget):
         flo.addWidget(self.contrast, 5, 1)
 
         self.setLayout(flo)
-        self.setWindowTitle("QLineEdit Example")
+        self.setWindowTitle("Array Setup Menu")
+        
         
         #initialize the main figure panel
         self.fig, (self.ax1, self.ax2) = plt.subplots(2, 2)
         self.fig.show()
+        self.setArrayDefaults()
         
 
     def importImage(self):
@@ -140,27 +147,44 @@ class MainWindow(QWidget):
         img_payload["8 bit"]
 
         """
-        
-        self.img_payload = {}
-        
-        cwd = os.getcwd()
-        inputdir = (cwd + "\\images- contrast- test\\")
-        
-        #recursively go through directories and pull images to shove into cut images dir
-        dirList = os.listdir(inputdir)
-        img1 = dirList[1]
-        image = cv2.imread(inputdir + img1, -1)
-        self.img_payload["original"] = image
-        
-        image8b = cv2.normalize(image.copy(),
-                            np.zeros(image.shape),
-                            0, 255,
-                            norm_type=cv2.NORM_MINMAX,
-                            dtype=cv2.CV_8U)
-        self.img_payload["8 bit"] = image8b
-        
-        return self.img_payload
+        try:
+            return self.img_payload
+            
+        except AttributeError:
+            print("re-reading image...")
+            self.img_payload = {}
+            
+            cwd = os.getcwd()
+            inputdir = (cwd + "\\images- contrast- test\\")
+            
+            #recursively go through directories and pull images to shove into cut images dir
+            dirList = os.listdir(inputdir)
+            img1 = dirList[1]
+            image = cv2.imread(inputdir + img1, -1)
+            self.img_payload["original"] = image
+            
+            image8b = cv2.normalize(image.copy(),
+                                np.zeros(image.shape),
+                                0, 255,
+                                norm_type=cv2.NORM_MINMAX,
+                                dtype=cv2.CV_8U)
+            self.img_payload["8 bit"] = image8b
+            
+            return self.img_payload
     
+    def setArrayDefaults(self):
+        self.rows.setText(str(defaultArraySetup["rows"]))
+        self.cols.setText(str(defaultArraySetup["cols"]))
+        self.radii.setText(str(defaultArraySetup["radii"]))
+        self.row_pitch.setText(str(defaultArraySetup["row_pitch"]))
+        self.col_pitch.setText(str(defaultArraySetup["col_pitch"]))
+        self.topLeft_rowCoord.setText(str(defaultArraySetup["top_left_coords"][0]))
+        self.topLeft_colCoord.setText(str(defaultArraySetup["top_left_coords"][1]))
+        self.bg_rows.setText(str(defaultArraySetup["rows"]))
+        self.bg_cols.setText(str(defaultArraySetup["cols"]))
+        self.contrast.setText(str(1))
+        
+        
     def contrast_enhance(self, multiplier):
         image8b = self.img_payload["8 bit"]
         print(image8b.shape)
@@ -171,16 +195,18 @@ class MainWindow(QWidget):
         
     def plotUpdate(self):
         self.fig = plt.gcf()
+        
         img_payload = self.importImage()
         
         self.ax1[0].imshow(img_payload["8 bit"],
                       cmap="gray")
         zoom_factory(self.ax1[0])
         
-        contrastFactor = self.contrast.text()
-        self.ax1[1].imshow(self.contrast_enhance(contrastFactor),
-                      cmap="gray")
-        zoom_factory(self.ax1[0])
+        if self.contrast.text():
+            contrastFactor = self.contrast.text()
+            self.ax1[1].imshow(self.contrast_enhance(contrastFactor),
+                          cmap="gray")
+        zoom_factory(self.ax1[1])
         
         panhandler(self.fig, button=2)
         self.fig.canvas.draw()
