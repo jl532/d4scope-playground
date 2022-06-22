@@ -22,56 +22,176 @@ defaultArraySetup = {"rows": 7,
                     	      4,1,3,2,1,1,2,
                     	      2,4,1,4,1,3,2]}
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QHBoxLayout, QGridLayout, QVBoxLayout, QWidget, QLineEdit, QFormLayout
+from PyQt5.QtGui import QIntValidator,QDoubleValidator,QFont
+from PyQt5.QtCore import Qt
 
-import sys
+import sys, os
 
-import pyqtgraph as pg
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
+from mpl_point_clicker import clicker
+from mpl_interactions import zoom_factory, panhandler
 
-class MainWindow(QMainWindow):
+class MainWindow(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.centralwidget = QWidget()
-        self.verticalLayout = QVBoxLayout(self.centralwidget)
+        self.rows = QLineEdit()
+        self.rows.setValidator(QIntValidator())
+        self.rows.setMaxLength(2)
+        self.rows.setAlignment(Qt.AlignRight)
+        self.rows.setFont(QFont("Arial",15))
+
+        self.cols = QLineEdit()
+        self.cols.setValidator(QIntValidator())
+        self.cols.setMaxLength(2)
+        self.cols.setAlignment(Qt.AlignRight)
+        self.cols.setFont(QFont("Arial",15))
+
+        self.radii = QLineEdit()
+        self.radii.setValidator(QIntValidator())
+        self.radii.setMaxLength(2)
+        self.radii.setAlignment(Qt.AlignRight)
+        self.radii.setFont(QFont("Arial",15))
+
+        self.row_pitch = QLineEdit()
+        self.row_pitch.setMaxLength(2)
+        self.row_pitch.setAlignment(Qt.AlignRight)
+        self.row_pitch.setFont(QFont("Arial",15))
+
+        self.col_pitch = QLineEdit()
+        self.col_pitch.setMaxLength(2)
+        self.col_pitch.setAlignment(Qt.AlignRight)
+        self.col_pitch.setFont(QFont("Arial",15))
+
+        self.topLeft_rowCoord = QLineEdit()
+        self.topLeft_rowCoord.setMaxLength(4)
+        self.topLeft_rowCoord.setAlignment(Qt.AlignRight)
+        self.topLeft_rowCoord.setFont(QFont("Arial",15))
+        self.topLeft_colCoord = QLineEdit()
+        self.topLeft_colCoord.setMaxLength(4)
+        self.topLeft_colCoord.setAlignment(Qt.AlignRight)
+        self.topLeft_colCoord.setFont(QFont("Arial",15))
+
+        self.bg_rows = QLineEdit()
+        self.bg_rows.setMaxLength(4)
+        self.bg_rows.setAlignment(Qt.AlignRight)
+        self.bg_rows.setFont(QFont("Arial",15))
+        self.bg_cols = QLineEdit()
+        self.bg_cols.setMaxLength(4)
+        self.bg_cols.setAlignment(Qt.AlignRight)
+        self.bg_cols.setFont(QFont("Arial",15))
+        self.bg_cols.textChanged[str].connect(self.textchanged)
         
-        self.im_widget = pg.ImageView(self)
-        self.im_widget.ui.roiBtn.hide()
-        self.im_widget.ui.menuBtn.hide()
-        self.plotting_widget = QWidget()
-        self.plotting_widget.setLayout(QVBoxLayout())
-        self.plotting_widget.layout().addWidget(self.im_widget)
-        self.im_widget.show()
-        self.verticalLayout.addWidget(self.plotting_widget)
+        self.contrast = QLineEdit()
+        self.contrast.setMaxLength(3)
+        self.contrast.setAlignment(Qt.AlignRight)
+        self.contrast.setFont(QFont("Arial",15))
+        self.contrast.textChanged[str].connect(self.textchanged)
+
+        e4 = QLineEdit()
+        e4.textChanged[str].connect(self.textchanged)
+
+        flo = QGridLayout()
+        flo.addWidget(QLabel("Circle radius"), 0, 0)
+        flo.addWidget(self.radii, 0, 1)
         
-        self.button = QPushButton("Push for Window")
-        self.verticalLayout.addWidget(self.button)
-        self.setCentralWidget(self.centralwidget)
+        flo.addWidget(QLabel("Rows"), 1, 0)
+        flo.addWidget(self.rows, 1, 1)
+        flo.addWidget(QLabel("Row Pitch"), 1, 2)
+        flo.addWidget(self.row_pitch, 1 , 3)
+
+        flo.addWidget(QLabel("Columns"), 2, 0)
+        flo.addWidget(self.cols, 2, 1)
+        flo.addWidget(QLabel("Column Pitch"), 2, 2)
+        flo.addWidget(self.col_pitch, 2, 3)
+
+        flo.addWidget(QLabel("BG Top Left Row Coord"), 3, 0)
+        flo.addWidget(self.topLeft_rowCoord, 3, 1)
+        flo.addWidget(QLabel("BG Top Left Col Coord"), 3, 2)
+        flo.addWidget(self.topLeft_colCoord, 3, 3)
+
+        flo.addWidget(QLabel("BG total rows"), 4, 0)
+        flo.addWidget(self.bg_rows, 4, 1)
+        flo.addWidget(QLabel("BG total cols"), 4, 2)
+        flo.addWidget(self.bg_cols, 4, 3)
+        flo.addWidget(QLabel("contrast"), 5, 0)
+        flo.addWidget(self.contrast, 5, 1)
+
+        self.setLayout(flo)
+        self.setWindowTitle("QLineEdit Example")
         
-        self.genericImage = np.zeros((800,600,3))
-        self.genericImage = cv2.circle(self.genericImage, 
-                            (400, 300),
-                            50,
-                            (0,255,0),
-                            -1
-                            )
-        self.genericImage = cv2.circle(self.genericImage, 
-                            (0, 300),
-                            50,
-                            (0,255,255),
-                            -1
-                            )
-        self.genericImage = cv2.circle(self.genericImage, 
-                            (400, 0),
-                            50,
-                            (255,255,0),
-                            -1
-                            )
+        #initialize the main figure panel
+        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 2)
+        self.fig.show()
         
-        self.im_widget.setImage(self.genericImage)
-            
+
+    def importImage(self):
+        """
+        imports the image from the os.listdir from the listed directory.
+        needs to be cleaned up with a file dialog, but shouldn't be too bad
+
+        Returns
+        -------
+        img_payload : dict with original 16 bit image, and converted 8bit image
+        img_payload["original"]
+        img_payload["8 bit"]
+
+        """
+        
+        self.img_payload = {}
+        
+        cwd = os.getcwd()
+        inputdir = (cwd + "\\images- contrast- test\\")
+        
+        #recursively go through directories and pull images to shove into cut images dir
+        dirList = os.listdir(inputdir)
+        img1 = dirList[1]
+        image = cv2.imread(inputdir + img1, -1)
+        self.img_payload["original"] = image
+        
+        image8b = cv2.normalize(image.copy(),
+                            np.zeros(image.shape),
+                            0, 255,
+                            norm_type=cv2.NORM_MINMAX,
+                            dtype=cv2.CV_8U)
+        self.img_payload["8 bit"] = image8b
+        
+        return self.img_payload
+    
+    def contrast_enhance(self, multiplier):
+        image8b = self.img_payload["8 bit"]
+        print(image8b.shape)
+        contrastEnhanced_image = np.zeros(image8b.shape)
+        contrastEnhanced_image = np.dot(int(multiplier), image8b)
+        contrastEnhanced_image = np.clip(contrastEnhanced_image, 0, 255)
+        return contrastEnhanced_image
+        
+    def plotUpdate(self):
+        self.fig = plt.gcf()
+        img_payload = self.importImage()
+        
+        self.ax1[0].imshow(img_payload["8 bit"],
+                      cmap="gray")
+        zoom_factory(self.ax1[0])
+        
+        contrastFactor = self.contrast.text()
+        self.ax1[1].imshow(self.contrast_enhance(contrastFactor),
+                      cmap="gray")
+        zoom_factory(self.ax1[0])
+        
+        panhandler(self.fig, button=2)
+        self.fig.canvas.draw()
+        
+    def textchanged(self,text):
+        self.plotUpdate()
+        print("updated plot...")
+        
+
+    def enterPress(self):
+        print("Enter pressed")
 
 
 def main():
