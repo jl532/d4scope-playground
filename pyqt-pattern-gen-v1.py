@@ -43,58 +43,66 @@ class MainWindow(QWidget):
         self.rows.setMaxLength(2)
         self.rows.setAlignment(Qt.AlignRight)
         self.rows.setFont(QFont("Arial",15))
+        self.rows.editingFinished.connect(self.enterPress)
 
         self.cols = QLineEdit()
         self.cols.setValidator(QIntValidator())
         self.cols.setMaxLength(2)
         self.cols.setAlignment(Qt.AlignRight)
         self.cols.setFont(QFont("Arial",15))
+        self.cols.editingFinished.connect(self.enterPress)
 
         self.radii = QLineEdit()
         self.radii.setValidator(QIntValidator())
         self.radii.setMaxLength(2)
         self.radii.setAlignment(Qt.AlignRight)
         self.radii.setFont(QFont("Arial",15))
+        self.radii.editingFinished.connect(self.enterPress)
 
         self.row_pitch = QLineEdit()
-        self.row_pitch.setMaxLength(2)
+        self.row_pitch.setMaxLength(4)
         self.row_pitch.setAlignment(Qt.AlignRight)
         self.row_pitch.setFont(QFont("Arial",15))
+        self.row_pitch.editingFinished.connect(self.enterPress)
 
         self.col_pitch = QLineEdit()
-        self.col_pitch.setMaxLength(2)
+        self.col_pitch.setMaxLength(4)
         self.col_pitch.setAlignment(Qt.AlignRight)
         self.col_pitch.setFont(QFont("Arial",15))
+        self.col_pitch.editingFinished.connect(self.enterPress)
 
         self.topLeft_rowCoord = QLineEdit()
         self.topLeft_rowCoord.setValidator(QIntValidator())
         self.topLeft_rowCoord.setMaxLength(4)
         self.topLeft_rowCoord.setAlignment(Qt.AlignRight)
         self.topLeft_rowCoord.setFont(QFont("Arial",15))
+        self.topLeft_rowCoord.editingFinished.connect(self.enterPress)
         self.topLeft_colCoord = QLineEdit()
         self.topLeft_colCoord.setValidator(QIntValidator())
         self.topLeft_colCoord.setMaxLength(4)
         self.topLeft_colCoord.setAlignment(Qt.AlignRight)
         self.topLeft_colCoord.setFont(QFont("Arial",15))
+        self.topLeft_colCoord.editingFinished.connect(self.enterPress)
 
         self.bg_rows = QLineEdit()
         self.bg_rows.setValidator(QIntValidator())
         self.bg_rows.setMaxLength(4)
         self.bg_rows.setAlignment(Qt.AlignRight)
         self.bg_rows.setFont(QFont("Arial",15))
+        self.bg_rows.editingFinished.connect(self.enterPress)
         self.bg_cols = QLineEdit()
         self.bg_cols.setValidator(QIntValidator())
         self.bg_cols.setMaxLength(4)
         self.bg_cols.setAlignment(Qt.AlignRight)
         self.bg_cols.setFont(QFont("Arial",15))
-        self.bg_cols.textChanged[str].connect(self.textchanged)
+        self.bg_cols.editingFinished.connect(self.enterPress)
         
         self.contrast = QLineEdit()
         self.contrast.setValidator(QIntValidator())
         self.contrast.setMaxLength(3)
         self.contrast.setAlignment(Qt.AlignRight)
         self.contrast.setFont(QFont("Arial",15))
-        self.contrast.textChanged[str].connect(self.textchanged)
+        self.contrast.editingFinished.connect(self.enterPress)
 
         e4 = QLineEdit()
         e4.textChanged[str].connect(self.textchanged)
@@ -113,9 +121,9 @@ class MainWindow(QWidget):
         flo.addWidget(QLabel("Column Pitch"), 2, 2)
         flo.addWidget(self.col_pitch, 2, 3)
 
-        flo.addWidget(QLabel("BG Top Left Row Coord"), 3, 0)
+        flo.addWidget(QLabel("array Top Left Row Coord"), 3, 0)
         flo.addWidget(self.topLeft_rowCoord, 3, 1)
-        flo.addWidget(QLabel("BG Top Left Col Coord"), 3, 2)
+        flo.addWidget(QLabel("array Top Left Col Coord"), 3, 2)
         flo.addWidget(self.topLeft_colCoord, 3, 3)
 
         flo.addWidget(QLabel("BG total rows"), 4, 0)
@@ -191,6 +199,7 @@ class MainWindow(QWidget):
         contrastEnhanced_image = np.zeros(image8b.shape)
         contrastEnhanced_image = np.dot(int(multiplier), image8b)
         contrastEnhanced_image = np.clip(contrastEnhanced_image, 0, 255)
+        contrastEnhanced_image = np.uint8(contrastEnhanced_image)
         return contrastEnhanced_image
         
     def plotUpdate(self):
@@ -204,19 +213,49 @@ class MainWindow(QWidget):
         
         if self.contrast.text():
             contrastFactor = self.contrast.text()
-            self.ax1[1].imshow(self.contrast_enhance(contrastFactor),
+            contrast_img = self.contrast_enhance(contrastFactor)
+            self.ax1[1].imshow(contrast_img,
                           cmap="gray")
         zoom_factory(self.ax1[1])
+        
+        
+        verImg = cv2.cvtColor(contrast_img, cv2.COLOR_GRAY2BGR)
+        
+        rows = int(self.rows.text())
+        cols = int(self.cols.text())
+        rowPos = int(self.topLeft_rowCoord.text())
+        colPos = int(self.topLeft_colCoord.text())
+        radii = int(self.radii.text())
+        rowPitch = float(self.row_pitch.text())
+        colPitch = float(self.col_pitch.text())
+        
+        for eachRow in range(rows):
+            colPos = int(self.topLeft_colCoord.text())
+            for eachCol in range(cols):
+                cv2.circle(verImg,
+                           (int(colPos), int(rowPos)),
+                           radii, 
+                           (255,0,0), 
+                           thickness = 2)
+                colPos = colPos + colPitch
+            rowPos = rowPos + rowPitch
+                        
+        self.ax2[0].imshow(verImg)
+        zoom_factory(self.ax2[0])
+        
+
+        self.bg_rows.text()
+        self.bg_cols.text()
         
         panhandler(self.fig, button=2)
         self.fig.canvas.draw()
         
     def textchanged(self,text):
-        self.plotUpdate()
         print("updated plot...")
         
 
     def enterPress(self):
+        self.plotUpdate()
         print("Enter pressed")
 
 
