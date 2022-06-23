@@ -22,11 +22,11 @@ defaultArraySetup = {"rows": 7,
                     	      4,1,3,2,1,1,2,
                     	      2,4,1,4,1,3,2]}
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QHBoxLayout, QGridLayout, QVBoxLayout, QWidget, QLineEdit, QFormLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QPushButton, QLabel, QHBoxLayout, QGridLayout, QVBoxLayout, QWidget, QLineEdit, QFormLayout
 from PyQt5.QtGui import QIntValidator,QDoubleValidator,QFont
 from PyQt5.QtCore import Qt
 
-import sys, os
+import sys, os, json
 
 import numpy as np
 import cv2
@@ -95,15 +95,19 @@ class MainWindow(QWidget):
         self.contrast.setAlignment(Qt.AlignRight)
         self.contrast.setFont(QFont("Arial",15))
         
+        self.resetButton = QPushButton("&reset to defaults")
+        self.resetButton.clicked.connect(self.setArrayDefaults)
+        
         self.submitButton = QPushButton("&Set changes")
         self.submitButton.clicked.connect(self.plotUpdate)
         
-        self.saveButton . QPushButton("&save settings")
+        self.saveButton = QPushButton("&save settings")
         self.saveButton.clicked.connect(self.saveSettings)
 
         flo = QGridLayout()
         flo.addWidget(QLabel("Circle radius"), 0, 0)
         flo.addWidget(self.radii, 0, 1)
+        flo.addWidget(self.resetButton, 0, 3)
         
         flo.addWidget(QLabel("Rows"), 1, 0)
         flo.addWidget(self.rows, 1, 1)
@@ -127,6 +131,7 @@ class MainWindow(QWidget):
         flo.addWidget(QLabel("contrast"), 5, 0)
         flo.addWidget(self.contrast, 5, 1)
         flo.addWidget(self.submitButton, 5, 3)
+        flo.addWidget(self.saveButton, 6, 2)
 
         self.setLayout(flo)
         self.setWindowTitle("Array Setup Menu")
@@ -268,7 +273,13 @@ class MainWindow(QWidget):
                             	      3,1,4,1,2,3,3,
                             	      4,1,3,2,1,1,2,
                             	      2,4,1,4,1,3,2]}
-
+        
+        saveFileName = QFileDialog.getSaveFileName(self,"Save File")
+        file = open(saveFileName[0],'w')
+        json.dump(newArraySetup, file, indent = 6)
+        file.close()
+        print("settings saved.")
+        
     def enterPress(self):
         self.plotUpdate()
         print("Enter pressed")
