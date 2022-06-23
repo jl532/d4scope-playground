@@ -14,6 +14,8 @@ defaultArraySetup = {"rows": 7,
                     "col_pitch": 34.5,
                     "top_left_coords": [302,394],
                     "fiducials":[[232,393],[232,427],[232,599],[232,565]],
+                    "BG_rows": 300,
+                    "BG_cols": 400,
                     "spot_index":[4,1,4,1,3,1,2,
                     	      3,3,4,3,2,2,1,
                     	      4,2,2,1,4,3,4,
@@ -188,8 +190,8 @@ class MainWindow(QWidget):
         self.col_pitch.setText(str(defaultArraySetup["col_pitch"]))
         self.topLeft_rowCoord.setText(str(defaultArraySetup["top_left_coords"][0]))
         self.topLeft_colCoord.setText(str(defaultArraySetup["top_left_coords"][1]))
-        self.bg_rows.setText(str(defaultArraySetup["rows"]))
-        self.bg_cols.setText(str(defaultArraySetup["cols"]))
+        self.bg_rows.setText(str(defaultArraySetup["BG_rows"]))
+        self.bg_cols.setText(str(defaultArraySetup["BG_cols"]))
         self.contrast.setText(str(1))
         
         
@@ -227,6 +229,8 @@ class MainWindow(QWidget):
         radii = int(self.radii.text())
         rowPitch = float(self.row_pitch.text())
         colPitch = float(self.col_pitch.text())
+        bg_rows = int(self.bg_rows.text())
+        bg_cols = int(self.bg_cols.text())
         
         for eachRow in range(rows):
             colPos = int(self.topLeft_colCoord.text())
@@ -238,14 +242,21 @@ class MainWindow(QWidget):
                            thickness = 2)
                 colPos = colPos + colPitch
             rowPos = rowPos + rowPitch
-                        
+        arrayCenterRow = (rowPos - rowPitch + int(self.topLeft_rowCoord.text())) // 2
+        arrayCenterCol = (colPos - colPitch + int(self.topLeft_colCoord.text())) // 2
+        
+        topLeftBG_row = arrayCenterRow - (bg_rows / 2)
+        topLeftBG_col = arrayCenterCol - (bg_cols / 2)
+        
+        cv2.rectangle(verImg, 
+                      (int(topLeftBG_col), int(topLeftBG_row)),
+                      (int(topLeftBG_col + bg_cols), int(topLeftBG_row + bg_rows)),
+                      (255,255,0),
+                      2)
+                      
         self.ax2[0].imshow(verImg)
         zoom_factory(self.ax2[0])
-        
 
-        self.bg_rows.text()
-        self.bg_cols.text()
-        
         panhandler(self.fig, button=2)
         self.fig.canvas.draw()
         
@@ -260,19 +271,21 @@ class MainWindow(QWidget):
         colPitch = float(self.col_pitch.text())
         
         newArraySetup = {"rows": rows,
-                            "cols": cols,
-                            "radii":  radii,
-                            "row_pitch": rowPitch,
-                            "col_pitch": colPitch,
-                            "top_left_coords": [rowPos,colPos],
-                            "fiducials":[[232,393],[232,427],[232,599],[232,565]],
-                            "spot_index":[4,1,4,1,3,1,2,
-                            	      3,3,4,3,2,2,1,
-                            	      4,2,2,1,4,3,4,
-                            	      3,4,3,2,4,1,2,
-                            	      3,1,4,1,2,3,3,
-                            	      4,1,3,2,1,1,2,
-                            	      2,4,1,4,1,3,2]}
+                        "cols": cols,
+                        "radii":  radii,
+                        "row_pitch": rowPitch,
+                        "col_pitch": colPitch,
+                        "top_left_coords": [rowPos,colPos],
+                        "fiducials":[[232,393],[232,427],[232,599],[232,565]],
+                        "BG_rows": self.bg_rows.text(),
+                        "BG_cols": self.bg_cols.text(),
+                        "spot_index":[4,1,4,1,3,1,2,
+                        	      3,3,4,3,2,2,1,
+                        	      4,2,2,1,4,3,4,
+                        	      3,4,3,2,4,1,2,
+                        	      3,1,4,1,2,3,3,
+                        	      4,1,3,2,1,1,2,
+                        	      2,4,1,4,1,3,2]}
         
         saveFileName = QFileDialog.getSaveFileName(self,"Save File")
         file = open(saveFileName[0],'w')
