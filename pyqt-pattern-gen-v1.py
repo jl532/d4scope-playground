@@ -165,12 +165,13 @@ class MainWindow(QWidget):
             self.img_payload = {}
             
             cwd = os.getcwd()
-            inputdir = (cwd + "\\images- contrast- test\\")
+            inputdir = (cwd + "\\images-cov\\")
             
             #recursively go through directories and pull images to shove into cut images dir
             dirList = os.listdir(inputdir)
             img1 = dirList[1]
             image = cv2.imread(inputdir + img1, -1)
+            image = cv2.imread("C:/Users/jason/CODE/Image labeller/46B_SLSp_LT.tiff", -1)
             self.img_payload["original"] = image
             
             image8b = cv2.normalize(image.copy(),
